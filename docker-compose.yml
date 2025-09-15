@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  spotify-mcp:
+    build: .
+    environment:
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "8888:8888"
+    stdin_open: true
+    tty: true
+    labels:
+      - "mcp.server=spotify"
+      - "mcp.description=Spotify API integration for music analysis and playlist management"
