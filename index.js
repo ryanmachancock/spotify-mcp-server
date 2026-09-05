@@ -16,7 +16,7 @@ const __dirname = dirname(__filename);
 // Spotify API configuration
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const SPOTIFY_REDIRECT_URI = 'http://localhost:8888/callback';
+const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || 'http://localhost:8888/callback';
 const TOKEN_FILE = join(__dirname, 'spotify_tokens.json');
 
 // Required scopes for comprehensive access
@@ -256,22 +256,6 @@ class SpotifyMCPServer {
             }
           },
           {
-            name: 'get_track_features',
-            description: 'Get audio features for tracks (danceability, energy, valence, etc.)',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                track_ids: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Array of Spotify track IDs',
-                  maxItems: 100
-                }
-              },
-              required: ['track_ids']
-            }
-          },
-          {
             name: 'get_playlists',
             description: 'Get your playlists',
             inputSchema: {
@@ -350,44 +334,6 @@ class SpotifyMCPServer {
               },
               required: ['playlist_id', 'track_uris']
             }
-          },
-          {
-            name: 'get_recommendations',
-            description: 'Get track recommendations based on seed tracks, artists, or genres',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                seed_tracks: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Seed track IDs',
-                  maxItems: 5
-                },
-                seed_artists: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Seed artist IDs',
-                  maxItems: 5
-                },
-                seed_genres: {
-                  type: 'array',
-                  items: { type: 'string' },
-                  description: 'Seed genre names',
-                  maxItems: 5
-                },
-                limit: {
-                  type: 'number',
-                  minimum: 1,
-                  maximum: 100,
-                  default: 20,
-                  description: 'Number of recommendations to return'
-                },
-                target_danceability: { type: 'number', minimum: 0, maximum: 1 },
-                target_energy: { type: 'number', minimum: 0, maximum: 1 },
-                target_valence: { type: 'number', minimum: 0, maximum: 1 },
-                target_tempo: { type: 'number', minimum: 0 }
-              }
-            }
           }
         ]
       };
@@ -410,8 +356,6 @@ class SpotifyMCPServer {
             return await this.getRecentlyPlayed(args.limit);
           case 'search_tracks':
             return await this.searchTracks(args.query, args.limit);
-          case 'get_track_features':
-            return await this.getTrackFeatures(args.track_ids);
           case 'get_playlists':
             return await this.getPlaylists(args.limit);
           case 'get_playlist_tracks':
@@ -420,8 +364,6 @@ class SpotifyMCPServer {
             return await this.createPlaylist(args.name, args.description, args.public);
           case 'add_tracks_to_playlist':
             return await this.addTracksToPlaylist(args.playlist_id, args.track_uris);
-          case 'get_recommendations':
-            return await this.getRecommendations(args);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -569,18 +511,6 @@ class SpotifyMCPServer {
     };
   }
 
-  async getTrackFeatures(trackIds) {
-    const features = await this.makeSpotifyRequest(`/audio-features?ids=${trackIds.join(',')}`);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(features, null, 2)
-        }
-      ]
-    };
-  }
-
   async getPlaylists(limit = 20) {
     const playlists = await this.makeSpotifyRequest(`/me/playlists?limit=${limit}`);
     return {
@@ -637,30 +567,6 @@ class SpotifyMCPServer {
         {
           type: 'text',
           text: JSON.stringify(result, null, 2)
-        }
-      ]
-    };
-  }
-
-  async getRecommendations(params) {
-    const queryParams = new URLSearchParams();
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          queryParams.append(key, value.join(','));
-        } else {
-          queryParams.append(key, value.toString());
-        }
-      }
-    });
-
-    const recommendations = await this.makeSpotifyRequest(`/recommendations?${queryParams.toString()}`);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(recommendations, null, 2)
         }
       ]
     };

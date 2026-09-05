@@ -2,15 +2,7 @@
 .env
 
 # Spotify tokens (contains personal access tokens)
-.spotify_tokens.json
-
-# Virtual environment
-venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+spotify_tokens.json
 
 # IDE files
 .vscode/
